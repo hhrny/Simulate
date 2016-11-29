@@ -1,5 +1,6 @@
 package Simulate;
 
+import java.text.DecimalFormat;
 import java.util.Vector;
 
 import Lexer.Lexer;
@@ -226,6 +227,7 @@ public class Simulate {
 	public void printSummaryStatistics(){
 		int i, alltripduration=0, alltriptimes=0, allnoschedule = 0, allbinoverflowed= 0,allbins= 0;
 		float allwasteweight= 0, allwastevolume=0;
+		DecimalFormat df = new DecimalFormat("########0.00");  
 		System.out.println("---");
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average trip duration "+DateTime.toMinSecString(areas.get(i).getAverageTripDuration()));
@@ -234,26 +236,26 @@ public class Simulate {
 		}
 		System.out.println("overall average trip duration "+DateTime.toMinSecString((alltripduration/alltriptimes)));
 		for(i = 0; i < Simulate.noAreas; i ++){
-			System.out.println("area " + i + ": average no. trip "+areas.get(i).getNoTripsPerSchedule());
+			System.out.println("area " + i + ": average no. trip "+df.format(areas.get(i).getNoTripsPerSchedule()));
 			allnoschedule += areas.get(i).getNoSchedule();
 		}
-		System.out.println("overall average no. trip " + ((float)alltriptimes/allnoschedule));
+		System.out.println("overall average no. trip " + df.format(((float)alltriptimes/allnoschedule)));
 		for(i = 0; i < Simulate.noAreas; i ++){
-			System.out.println("area " + i + ": trip efficiency "+areas.get(i).getTripEfficiency());// kg/min
+			System.out.println("area " + i + ": trip efficiency "+df.format(areas.get(i).getTripEfficiency()));// kg/min
 			allwasteweight += areas.get(i).allWasteWeight;
 		}
-		System.out.println("overall trip efficiency "+allwasteweight*60/alltripduration);   // kg/min
+		System.out.println("overall trip efficiency "+df.format(allwasteweight*60/alltripduration));   // kg/min
 		for(i = 0; i < Simulate.noAreas; i ++){
-			System.out.println("area " + i + ": average volume collected "+areas.get(i).getAverageVolumeCollected());
+			System.out.println("area " + i + ": average volume collected "+df.format(areas.get(i).getAverageVolumeCollected()));
 			allwastevolume += areas.get(i).allWasteVolume;
 		}
-		System.out.println("overall average volume collected "+allwastevolume/alltriptimes);
+		System.out.println("overall average volume collected "+df.format(allwastevolume/alltriptimes));
 		for(i = 0; i < Simulate.noAreas; i ++){
-			System.out.println("area " + i + ": percentage of bins overflowed "+areas.get(i).getPercentageOfBinOverflowed());
+			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()));
 			allbins += areas.get(i).bins.length;
 			allbinoverflowed += areas.get(i).getNoBinOverflowed();
 		}
-		System.out.println("overall percentage of bins overflowed "+(float)allbinoverflowed/allbins);
+		System.out.println("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins));
 		System.out.println("---");
 	}
 	public static void main(String []args){
@@ -263,7 +265,7 @@ public class Simulate {
 		if(args.length >= 1){
 			lexer.setFilename(args[0]);
 		}else{
-			lexer.setFilename("conf3.txt");
+			lexer.setFilename("conf2.txt");
 		}
 		// set the parameter disable logging
 		if(args.length == 2){
@@ -272,7 +274,7 @@ public class Simulate {
 			}
 		}
 		// debug
-		Simulate.setAbleLogging(false);
+		//Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
