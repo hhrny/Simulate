@@ -271,6 +271,8 @@ public class Simulate {
 				Simulate.setAbleLogging(false);
 			}
 		}
+		// debug
+		Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
@@ -288,7 +290,7 @@ public class Simulate {
 			//for(i = 0; i < 1; i ++){
 				simulate.initSimulate(cf.getExperiment(i));
 				// print the parameter of configure
-				cf.printConfigureParameter(i);
+				cf.getExperiment(i).printConfigureParameter(i);
 				// run simulate
 				simulate.runSimulate();
 				// print summary statistics

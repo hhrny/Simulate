@@ -26,6 +26,8 @@ public class Config {
 	public Vector<Integer> expDisposalDistrShape;
 	public Vector<Float>   expServiceFreq;
 	
+	public Vector<Config> experiments;
+	
 	public Config(){
 		lorryVolume = -1;
 		lorryMaxLoad = -1;
@@ -62,11 +64,11 @@ public class Config {
 		for(int i = 0; i < this.noAreas; i ++){
 			this.areasConfig.add(new AreaConfig(c.getAreas().get(i)));
 		}
-		this.noExp = 0;
-		this.isExperiment = false;
-		this.expDisposalDistrRate = null;
-		this.expDisposalDistrShape = null;
-		this.expServiceFreq = null;
+		this.noExp = c.noExp;
+		this.isExperiment = c.isExperiment;
+		this.expDisposalDistrRate = c.expDisposalDistrRate;
+		this.expDisposalDistrShape = c.expDisposalDistrShape;
+		this.expServiceFreq = c.expServiceFreq;
 	}
 	//
 	public boolean checkNoArea(){
@@ -249,6 +251,11 @@ public class Config {
 	public void setWarmUpTime(float warmUpTime) {
 		this.warmUpTime = warmUpTime;
 	}
+	public void setServiceFreq(float serviceFreq){
+		for(AreaConfig ac : this.areasConfig){
+			ac.setServiceFreq(serviceFreq);
+		}
+	}
 	// settting the paremeter
 	public boolean setParam(Token paramName, Lexer lexer){
 		Token tmp;
@@ -375,9 +382,6 @@ public class Config {
 					tmp = lexer.nextToken();
 					this.expDisposalDistrRate.add(Float.valueOf(((Num)tmp).val));
 				}
-				if(this.noExp == 0){
-					this.noExp = this.expDisposalDistrRate.size();
-				}
 				// check the experiment parameter
 				for(int i = 0; i < this.expDisposalDistrRate.size(); i ++){
 					// check the bag disposalDistrRate bigger than 0.0
@@ -388,9 +392,6 @@ public class Config {
 					else if(this.expDisposalDistrRate.get(i) == 0.0){
 						System.err.println("Warning: Parameter bag disposalDistrRate is equal to 0.0!");
 					}
-				}
-				if(this.noExp != this.expDisposalDistrRate.size()){
-					return false;
 				}
 				this.isExperiment = true;
 				this.setDisposalDistrRate(Float.valueOf(((Num)tmp).val));
@@ -420,6 +421,8 @@ public class Config {
 					}
 					return false;
 				}
+				this.expDisposalDistrRate = new Vector<Float>();
+				this.expDisposalDistrRate.add(this.getDisposalDistrRate());
 				return true;
 			}
 			System.err.println("Error: Parameter disposalDistrRate is not float type!");
@@ -439,12 +442,6 @@ public class Config {
 				while(lexer.hasNextToken() && lexer.getNextToken().isInteger()){
 					tmp = lexer.nextToken();
 					this.expDisposalDistrShape.add(Integer.valueOf(((Num)tmp).val));
-				}
-				if(this.noExp == 0){
-					this.noExp = this.expDisposalDistrShape.size();
-				}
-				if(this.noExp != this.expDisposalDistrShape.size()){
-					return false;
 				}
 				this.isExperiment = true;
 				this.setDisposalDistrShape(Integer.valueOf(((Num)tmp).val));
@@ -466,6 +463,8 @@ public class Config {
 					}
 					return false;
 				}
+				this.expDisposalDistrShape = new Vector<Integer>();
+				this.expDisposalDistrShape.add(this.getDisposalDistrShape());
 				return true;
 			}
 			System.err.println("Error: Parameter disposalDistrShape is not uint8_t type!");
@@ -499,9 +498,6 @@ public class Config {
 					else if(this.expServiceFreq.get(i) == 0.0){
 						System.err.println("Warning: Parameter serviceFreq of lorry is equal to 0.0!");
 					}
-				}
-				if(this.noExp != this.expServiceFreq.size()){
-					return false;
 				}
 				this.isExperiment = true;
 				return true;
@@ -718,6 +714,35 @@ public class Config {
 		}
 		flag = cf.isVaild();
 		if(isvaild && flag && cf.checkNoArea()){
+			if(cf.isExperiment()){
+				cf.experiments = new Vector<Config>();
+				if(cf.expServiceFreq == null){
+					// experiment param serviceFreq is null
+					cf.noExp = cf.expDisposalDistrRate.size() * cf.expDisposalDistrShape.size();
+					for(Float f : cf.expDisposalDistrRate){
+						for(Integer i : cf.expDisposalDistrShape){
+							Config exp = new Config(cf);
+							exp.setDisposalDistrRate(f);
+							exp.setDisposalDistrShape(i);
+							cf.experiments.add(exp);
+						}
+					}
+				}
+				else{
+					cf.noExp = cf.expDisposalDistrRate.size() * cf.expDisposalDistrShape.size() * cf.expServiceFreq.size();
+					for(Float f : cf.expDisposalDistrRate){
+						for(Integer i : cf.expDisposalDistrShape){
+							for(Float sf : cf.expServiceFreq){
+								Config exp = new Config(cf);
+								exp.setDisposalDistrRate(f);
+								exp.setDisposalDistrShape(i);
+								exp.setServiceFreq(sf);
+								cf.experiments.add(exp);
+							}
+						}
+					}
+				}
+			}
 			return cf;
 		}
 		return null;
@@ -754,21 +779,7 @@ public class Config {
 			System.out.println("Warming: Index of experiment is out of range!");
 			return null;
 		}
-		Config c = new Config(this);
-		// set the experiment configure
-		if(this.expDisposalDistrRate != null){
-			c.setDisposalDistrRate(this.expDisposalDistrRate.get(index));
-		}
-		if(this.expDisposalDistrShape != null){
-			c.setDisposalDistrShape(this.expDisposalDistrShape.get(index));
-		}
-		if(this.expServiceFreq != null){
-			// setting the area configure
-			for(int i = 0; i < this.noAreas; i ++){
-				c.getAreas().get(i).setServiceFreq(this.expServiceFreq.get(index));
-			}
-		}
-		return c;
+		return this.experiments.get(index);
 	}
 	// print experiment configure parameter of index
 	void printConfigureParameter(int index){
@@ -782,13 +793,13 @@ public class Config {
 		}
 		System.out.print("\nExperiment #"+(index+1));
 		if(this.expDisposalDistrRate != null){
-			System.out.print(" disposalDistrRate "+this.expDisposalDistrRate.get(index));
+			System.out.print(" disposalDistrRate "+this.disposalDistrRate);
 		}
 		if(this.expDisposalDistrShape != null){
-			System.out.print(" disposalDistrShape "+this.expDisposalDistrShape.get(index));
+			System.out.print(" disposalDistrShape "+this.disposalDistrShape);
 		}
 		if(this.expServiceFreq != null){
-			System.out.print(" serviceFreq "+this.expServiceFreq.get(index));
+			System.out.print(" serviceFreq "+this.areasConfig.get(0).getServiceFreq());
 		}
 		System.out.println("\n");
 	}
