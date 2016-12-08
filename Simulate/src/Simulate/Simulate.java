@@ -1,5 +1,6 @@
 package Simulate;
 
+import java.io.File;
 import java.text.DecimalFormat;
 import java.util.Vector;
 
@@ -39,6 +40,11 @@ public class Simulate {
 			tmp.genEvent();
 			areas.add(tmp);
 		}
+		// add stop event
+		SEvent stopEvent = new SEvent();
+		stopEvent.time = Simulate.stopTime;
+		stopEvent.eventType = SEventType.SIMULATE_STOP;
+		this.eventsQueue.addEvent(stopEvent);
 	}
 	public void modifySystemState(SEvent e){
 		// modify system state according to event
@@ -119,6 +125,8 @@ public class Simulate {
 			this.eventsQueue.addEvent(le2);
 			break;
 		case SEventType.LORRY_LOAD:
+			//
+			
 			break;
 		case SEventType.BIN_LOAD:
 			bine = (BinSEvent)e;
@@ -196,7 +204,6 @@ public class Simulate {
 		if(Simulate.isAbleLogging){
 			System.out.println(e.toString());
 		}
-		//System.out.println("Error Event Type!");
 	}
 	public void runSimulate(){
 		Simulate.currentTime = 0;
@@ -208,13 +215,17 @@ public class Simulate {
 				return;
 			}
 			Simulate.currentTime = nextEvent.time;
+			if(nextEvent.eventType == SEventType.SIMULATE_STOP){
+				// simulate is finished
+				break;
+			}
 			this.modifySystemState(nextEvent);
-			try {
+/*			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			}*/
 		}
 	}
 	public static boolean isAbleLogging() {
@@ -260,12 +271,19 @@ public class Simulate {
 	}
 	public static void main(String []args){
 		int i;
-		Lexer lexer = new Lexer();
+		String filename;
+		Lexer lexer;
 		// lexer analyze
 		if(args.length >= 1){
-			lexer.setFilename(args[0]);
+			filename = args[0];
 		}else{
-			lexer.setFilename("conf2.txt");
+			filename = "conf.txt";
+		}
+		// check the file is exist
+		File f = new File(filename);
+		if(! f.exists()){
+			System.out.println("The input file " + filename + " no exist!");
+			return;
 		}
 		// set the parameter disable logging
 		if(args.length == 2){
@@ -273,8 +291,10 @@ public class Simulate {
 				Simulate.setAbleLogging(false);
 			}
 		}
+		lexer = new Lexer();
+		lexer.setFilename(filename);
 		// debug
-		//Simulate.setAbleLogging(false);
+		Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){

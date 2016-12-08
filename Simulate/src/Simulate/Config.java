@@ -23,8 +23,11 @@ public class Config {
 	private boolean isExperiment;
        
 	public Vector<Float>   expDisposalDistrRate;
+	public boolean         isDDRexp;
 	public Vector<Integer> expDisposalDistrShape;
+	public boolean         isDDSexp;
 	public Vector<Float>   expServiceFreq;
+	public boolean         isSFexp;
 	
 	public Vector<Config> experiments;
 	
@@ -43,6 +46,9 @@ public class Config {
 		warmUpTime = (float) -1;
 		this.noExp = 0;
 		this.isExperiment = false;
+		this.isDDRexp = false;
+		this.isDDSexp = false;
+		this.isSFexp = false;
 		this.expDisposalDistrRate = null;
 		this.expDisposalDistrShape = null;
 		this.expServiceFreq = null;
@@ -69,6 +75,9 @@ public class Config {
 		this.expDisposalDistrRate = c.expDisposalDistrRate;
 		this.expDisposalDistrShape = c.expDisposalDistrShape;
 		this.expServiceFreq = c.expServiceFreq;
+		this.isDDRexp = c.isDDRexp;
+		this.isDDSexp = c.isDDSexp;
+		this.isSFexp = c.isSFexp;
 	}
 	//
 	public boolean checkNoArea(){
@@ -394,6 +403,7 @@ public class Config {
 					}
 				}
 				this.isExperiment = true;
+				this.isDDRexp = true;
 				this.setDisposalDistrRate(Float.valueOf(((Num)tmp).val));
 				return true;
 			}
@@ -444,6 +454,7 @@ public class Config {
 					this.expDisposalDistrShape.add(Integer.valueOf(((Num)tmp).val));
 				}
 				this.isExperiment = true;
+				this.isDDSexp = true;
 				this.setDisposalDistrShape(Integer.valueOf(((Num)tmp).val));
 				return true;
 			}
@@ -500,6 +511,7 @@ public class Config {
 					}
 				}
 				this.isExperiment = true;
+				this.isSFexp = true;
 				return true;
 			}
 			else{
@@ -792,13 +804,13 @@ public class Config {
 			return;
 		}
 		System.out.print("\nExperiment #"+(index+1));
-		if(this.expDisposalDistrRate != null){
+		if(this.isDDRexp){
 			System.out.print(" disposalDistrRate "+this.disposalDistrRate);
 		}
-		if(this.expDisposalDistrShape != null){
+		if(this.isDDSexp){
 			System.out.print(" disposalDistrShape "+this.disposalDistrShape);
 		}
-		if(this.expServiceFreq != null){
+		if(this.isSFexp){
 			System.out.print(" serviceFreq "+this.areasConfig.get(0).getServiceFreq());
 		}
 		System.out.println("\n");
