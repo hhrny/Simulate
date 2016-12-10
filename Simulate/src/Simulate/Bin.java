@@ -8,6 +8,8 @@ public class Bin {
 	public static float binVolume;
 	public float currentLoadWeight;
 	public float currentLoadVolume;
+	public boolean thresholdExceeded;
+	public boolean overflowed;
 	
 	public Bin(Area a, int bid){
 		this.area = a;
@@ -15,6 +17,8 @@ public class Bin {
 		this.binId = bid;
 		this.currentLoadVolume = 0;
 		this.currentLoadWeight = 0;
+		this.overflowed = false;
+		this.thresholdExceeded = false;
 	}
 	public void configBin(Config cf){
 		Bin.binServiceTime = cf.getBinServiceTime();
@@ -45,12 +49,21 @@ public class Bin {
 	public void clearBag(){
 		this.currentLoadVolume = 0;
 		this.currentLoadWeight = 0;
-		BinSEvent binEvent = new BinSEvent();
-		binEvent.time = Simulate.currentTime;
-		binEvent.bin = this;
-		binEvent.eventType = SEventType.BIN_LOAD;
-		this.simulate.eventsQueue.addEvent(binEvent);
 		this.area.binOverflow.remove(Integer.valueOf(this.binId));
 		this.area.binExceeded.remove(Integer.valueOf(this.binId));
+		this.overflowed = false;
+		this.thresholdExceeded = false;
+	}
+	public boolean isThresholdExceeded() {
+		return thresholdExceeded;
+	}
+	public void setThresholdExceeded(boolean thresholdExceeded) {
+		this.thresholdExceeded = thresholdExceeded;
+	}
+	public boolean isOverflowed() {
+		return overflowed;
+	}
+	public void setOverflowed(boolean overflowed) {
+		this.overflowed = overflowed;
 	}
 }

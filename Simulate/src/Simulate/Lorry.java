@@ -37,18 +37,25 @@ public class Lorry {
 	public static int getLorryMaxLoad() {
 		return lorryMaxLoad;
 	}
+	
+	public void setRoutePlanning(RoutePlanning rp){
+		this.rp = rp;
+	}
 
 	public static void setLorryMaxLoad(int lMaxLoad) {
 		lorryMaxLoad = lMaxLoad;
 	}
 	public void routePlanning(){
 		int mindist = Integer.MAX_VALUE, minbin = -1, tmppos;
+		float leftVolume = Lorry.lorryVolume - this.currentLoadVolume, leftWeight = Lorry.lorryMaxLoad - this.currentLoadWeight;
 		Iterator<Integer> it = this.area.binExceeded.iterator();
 		while(it.hasNext()){
 			tmppos = it.next().intValue();
-			if(rp.getTime(this.currentLocation, tmppos) < mindist){
-				mindist = rp.getTime(this.currentLocation, tmppos);
-				minbin = tmppos;
+			if(this.area.bins[tmppos-1].currentLoadVolume <= leftVolume*2 && this.area.bins[tmppos-1].currentLoadWeight <= leftWeight){
+				if(rp.getTime(this.currentLocation, tmppos) < mindist){
+					mindist = rp.getTime(this.currentLocation, tmppos);
+					minbin = tmppos;
+				}
 			}
 		}
 		if(minbin != -1){

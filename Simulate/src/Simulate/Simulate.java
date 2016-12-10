@@ -46,163 +46,246 @@ public class Simulate {
 		stopEvent.eventType = SEventType.SIMULATE_STOP;
 		this.eventsQueue.addEvent(stopEvent);
 	}
-	public void modifySystemState(SEvent e){
-		// modify system state according to event
-		LorrySEvent le,le2;
-		BagSEvent bage;
-		BinSEvent bine, bine2;
+	private void bagDisposedEvent(SEvent e){
+		// display the bag disposed message
+		BagSEvent currentBagEvent = (BagSEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		// check the bin is overflowed
+		if(! currentBagEvent.bin.isOverflowed()){
+			// the bin is not full
+			// generate next bin contents volume changed event
+			BinSEvent nextBinEvent = new BinSEvent();
+			nextBinEvent.bag = currentBagEvent.bag;
+			nextBinEvent.bin = currentBagEvent.bin;
+			nextBinEvent.eventType = SEventType.BIN_CONTENTS_VOLUME_CHANGED;
+			nextBinEvent.time = currentBagEvent.time;
+			nextBinEvent.volume = currentBagEvent.bag.bagVolume;
+			nextBinEvent.weight = currentBagEvent.bag.bagWeight;
+			this.eventsQueue.addEvent(nextBinEvent);
+		}
+		// generate next event of bag disposed
+		BagSEvent nextBagEvent = User.genBagSEvent(currentBagEvent.bin);
+		this.eventsQueue.addEvent(nextBagEvent);
+	}
+	private void lorryLeftEvent(SEvent e){
+		// display current lorry left message
+		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		// route planning, to get next destination
+		currentLorryEvent.area.lorry.routePlanning();
 		
+		// generate next lorry arrived event
+		LorrySEvent nextLorryArrivedEvent = new LorrySEvent();
+		nextLorryArrivedEvent.eventType = SEventType.LORRY_ARRIVED_AT;
+		nextLorryArrivedEvent.time = currentLorryEvent.time + currentLorryEvent.area.lorry.rp.getTime(currentLorryEvent.area.lorry.currentLocation, currentLorryEvent.area.lorry.destLocation);
+		nextLorryArrivedEvent.area = currentLorryEvent.area;
+		nextLorryArrivedEvent.leftLocation = currentLorryEvent.area.lorry.currentLocation;
+		if(currentLorryEvent.area.lorry.destLocation > 0){
+			// go to next bin
+			//System.err.println(nextLorryArrivedEvent.arrivedLocation);
+			nextLorryArrivedEvent.arrivedLocation = currentLorryEvent.area.lorry.destLocation;
+			//System.err.println(nextLorryArrivedEvent.arrivedLocation);
+			nextLorryArrivedEvent.bin = currentLorryEvent.area.bins[nextLorryArrivedEvent.arrivedLocation-1];
+		}
+		else{
+			// back to location 0
+			nextLorryArrivedEvent.arrivedLocation = 0;
+			nextLorryArrivedEvent.bin = null;
+		}
+		this.eventsQueue.addEvent(nextLorryArrivedEvent);
+	}
+	private void lorryArrivedAtEvent(SEvent e){
+		// display current lorry arrived at event
+		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		// arrived at the destination
+		currentLorryEvent.area.lorry.currentLocation = currentLorryEvent.arrivedLocation;
+		// statistic
+		currentLorryEvent.area.allTripTimes ++;
+		currentLorryEvent.area.allTripDuration += currentLorryEvent.area.lorry.rp.getTime(currentLorryEvent.leftLocation, currentLorryEvent.arrivedLocation);
+		// generate next events
+		if(currentLorryEvent.arrivedLocation == 0){ 
+			// back to the location 0
+			LorrySEvent nextLorryEvent = new LorrySEvent();
+			nextLorryEvent.area = currentLorryEvent.area;
+			nextLorryEvent.time = currentLorryEvent.time + 5*(int)Bin.binServiceTime;
+			nextLorryEvent.eventType = SEventType.LORRY_LOAD;
+			this.eventsQueue.addEvent(nextLorryEvent);
+		}
+		else{
+			// arrived at destination bin, load the bin than add a load bin event
+			BinSEvent nextBinLoadEvent = new BinSEvent();
+			nextBinLoadEvent.time = currentLorryEvent.time + (int)Bin.binServiceTime;
+			nextBinLoadEvent.eventType = SEventType.BIN_LOAD;
+			nextBinLoadEvent.bin = currentLorryEvent.bin;
+			nextBinLoadEvent.bag = null;
+			this.eventsQueue.addEvent(nextBinLoadEvent);
+			// and generate a lorry contents volume changed event
+			LorrySEvent nextLorryEvent = new LorrySEvent();
+			nextLorryEvent.eventType = SEventType.LORRY_CONTENTS_VOLUME_CHANGED;
+			nextLorryEvent.time = nextBinLoadEvent.time;
+			nextLorryEvent.area = currentLorryEvent.area;
+			nextLorryEvent.bin = currentLorryEvent.bin;
+			nextLorryEvent.weight = nextBinLoadEvent.bin.currentLoadWeight;
+			nextLorryEvent.volume = nextBinLoadEvent.bin.currentLoadVolume/2;
+			this.eventsQueue.addEvent(nextLorryEvent);
+		}
+	}
+	private void lorryContentsVolumeChangedEvent(SEvent e){
+		// display the current lorry event
+		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		currentLorryEvent.area.lorry.currentLoadVolume += currentLorryEvent.volume;
+		currentLorryEvent.area.lorry.currentLoadWeight += currentLorryEvent.weight;
+		// statistic
+		// add the waste weight to the all waste weight
+		currentLorryEvent.area.allWasteWeight += currentLorryEvent.weight;
+		// add the waste volume to the all waste volume
+		currentLorryEvent.area.allWasteVolume += currentLorryEvent.volume;
+		
+		// generate next lorry left event
+		LorrySEvent nextLorryLeftEvent = new LorrySEvent();
+		nextLorryLeftEvent.time = currentLorryEvent.time;
+		nextLorryLeftEvent.eventType = SEventType.LORRY_LEFT;
+		nextLorryLeftEvent.area = currentLorryEvent.area;
+		nextLorryLeftEvent.bin = currentLorryEvent.bin;
+		nextLorryLeftEvent.leftLocation = currentLorryEvent.area.lorry.currentLocation;
+		this.eventsQueue.addEvent(nextLorryLeftEvent);
+	}
+	private void lorryLoad(SEvent e){
+		// display lorry load message
+		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		// clean the lorry
+		currentLorryEvent.area.lorry.currentLoadVolume = 0;
+		currentLorryEvent.area.lorry.currentLoadWeight = 0;
+		// route planning
+		currentLorryEvent.area.lorry.routePlanning();
+		if(currentLorryEvent.area.lorry.destLocation != 0){
+			// need to collect the rubbish again
+			LorrySEvent nextLorryLeftEvent = new LorrySEvent();
+			nextLorryLeftEvent.eventType = SEventType.LORRY_LEFT;
+			nextLorryLeftEvent.time = currentLorryEvent.time;
+			nextLorryLeftEvent.area = currentLorryEvent.area;
+			nextLorryLeftEvent.leftLocation = 0;
+			this.eventsQueue.addEvent(nextLorryLeftEvent);
+		}
+	}
+	private void binLoad(SEvent e){
+		// display bin load message
+		BinSEvent currentBinEvent = (BinSEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		// clear the bin
+		if(currentBinEvent.bin.currentLoadVolume >= Bin.binVolume){
+			currentBinEvent.bin.area.binExceeded.remove(currentBinEvent.bin.binId);
+			currentBinEvent.bin.setThresholdExceeded(false);
+		}
+		if(currentBinEvent.bin.currentLoadVolume >= Bin.binVolume*currentBinEvent.bin.area.thresholdVal){
+			currentBinEvent.bin.area.binOverflow.remove(currentBinEvent.bin.binId);
+			currentBinEvent.bin.setOverflowed(false);
+		}
+		currentBinEvent.bin.currentLoadVolume = 0;
+		currentBinEvent.bin.currentLoadWeight = 0;
+	}
+	private void binContentsVolumeChangedEvent(SEvent e){
+		// display bin contents volume changed message
+		BinSEvent nextBinEvent;
+		BinSEvent currentBinEvent = (BinSEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		currentBinEvent.bin.currentLoadVolume += currentBinEvent.volume;
+		currentBinEvent.bin.currentLoadWeight += currentBinEvent.weight;
+		// generate a bin event if overflowed or exceeded
+		if(currentBinEvent.bin.currentLoadVolume > Bin.binVolume){
+			nextBinEvent = new BinSEvent();
+			nextBinEvent.time = currentBinEvent.time;
+			nextBinEvent.eventType = SEventType.BIN_OVERFLOWED;
+			nextBinEvent.bin = currentBinEvent.bin;
+			nextBinEvent.bag = currentBinEvent.bag;
+			this.eventsQueue.addEvent(nextBinEvent);
+		}else if(currentBinEvent.bin.currentLoadVolume > Bin.binVolume*currentBinEvent.bin.area.thresholdVal){
+			nextBinEvent = new BinSEvent();
+			nextBinEvent.time = currentBinEvent.time;
+			nextBinEvent.eventType = SEventType.BIN_OCCUPANCY_THRESHOLD_EXCEEDED;
+			nextBinEvent.bin = currentBinEvent.bin;
+			nextBinEvent.bag = currentBinEvent.bag;
+			this.eventsQueue.addEvent(nextBinEvent);
+		}
+	}
+	private void binOccupancyThresholdExceededEvent(SEvent e){
+		// display bin occupancy threshold exceeded message
+		BinSEvent currentBinEvent = (BinSEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		currentBinEvent.bin.area.binExceeded.add(currentBinEvent.bin.binId);
+	}
+	private void binOverflowed(SEvent e){
+		// display bin overflowed message
+		BinSEvent currentBinEvent = (BinSEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
+		currentBinEvent.bin.area.binOverflow.add(currentBinEvent.bin.binId);
+	}
+	private void modifySystemState(SEvent e){
+		// modify system state according to event
 		switch(e.eventType){
 		case SEventType.BAG_DISPOSED:
-			// display the bag disposed message and generate next event of this bag and bin
-			bage = (BagSEvent)e;
-			bine = new BinSEvent();
-			bine.bag = bage.bag;
-			bine.bin = bage.bin;
-			bine.eventType = SEventType.BIN_CONTENTS_VOLUME_CHANGED;
-			bine.time = bage.time;
-			bine.volume = bage.bag.bagVolume;
-			bine.weight = bage.bag.bagWeight;
-			this.eventsQueue.addEvent(bine);
+			// display the bag disposed message and generate next event of this disposed bag
+			// and bin contents volume changed event
+			this.bagDisposedEvent(e);
 			break;
 		case SEventType.LORRY_LEFT:
-			le = (LorrySEvent)e;
-			if(le.area.lorry.currentLoadVolume >= Lorry.lorryVolume || le.area.lorry.currentLoadWeight >= Lorry.lorryMaxLoad){
-				le.area.lorry.destLocation = 0;
-			}else{
-				le.area.lorry.routePlanning();
-			}
-			le2 = new LorrySEvent();
-			le2.time = Simulate.currentTime + (le.area.lorry.rp.getTime(le.area.lorry.currentLocation, le.area.lorry.destLocation));
-			le2.leftLocation = le.area.lorry.currentLocation;
-			le2.arrivedLocation = le.area.lorry.destLocation;
-			le2.area = le.area;
-			//System.out.println(le2.arrivedLocation-1);
-			if(le2.arrivedLocation != 0){
-				le2.bin = le.area.bins[le2.arrivedLocation-1];
-			}
-			le2.eventType = SEventType.LORRY_ARRIVED_AT;
-			this.eventsQueue.addEvent(le2);
+			// display the message of lorry left
+			this.lorryLeftEvent(e);
 			break;
 		case SEventType.LORRY_ARRIVED_AT:
-			le = (LorrySEvent)e;
-			le.area.allTripTimes ++;
-			le.area.allTripDuration += le.area.lorry.rp.getTime(le.leftLocation, le.arrivedLocation);
-			if(le.arrivedLocation == 0){ 
-				// back to the location 0
-				le2 = new LorrySEvent();
-				le2.area = le.area;
-				le2.time = Simulate.currentTime + 5*(int)Bin.binServiceTime;
-				le2.eventType = SEventType.LORRY_LOAD;
-				this.eventsQueue.addEvent(le2);
-			}
-			else{
-				// arrived at destination bin, load the bin
-				// add a load bin event
-				bine = new BinSEvent();
-				bine.time = Simulate.currentTime + (int)Bin.binServiceTime;
-				bine.eventType = SEventType.BIN_LOAD;
-				bine.bin = le.area.bins[le.arrivedLocation-1];
-				bine.bag = null;
-				this.eventsQueue.addEvent(bine);
-				bine.bin.area.lorry.currentLocation = le.arrivedLocation;
-			}
+			// display a lorry arrived at message
+			this.lorryArrivedAtEvent(e);
 			break;
 		case SEventType.LORRY_CONTENTS_VOLUME_CHANGED:
-			le = (LorrySEvent)e;
-			le.area.lorry.currentLoadVolume += le.volume;
-			le.area.lorry.currentLoadWeight += le.weight;
-			// add the waste weight to the all waste weight
-			le.area.allWasteWeight += le.weight;
-			// add the waste volume to the all waste volume
-			le.area.allWasteVolume += le.volume;
-			le2 = new LorrySEvent();
-			le2.time = Simulate.currentTime;
-			le2.eventType = SEventType.LORRY_LEFT;
-			le2.area = le.area;
-			le2.bin = le.bin;
-			le2.leftLocation = le.area.lorry.currentLocation;
-			this.eventsQueue.addEvent(le2);
+			// display a message of lorry contents volume changed and change the contents of lorry
+			this.lorryContentsVolumeChangedEvent(e);
 			break;
 		case SEventType.LORRY_LOAD:
-			//
-			
+			// load and check whether there is a next collect rubbish schedule
+			this.lorryLoad(e);
 			break;
 		case SEventType.BIN_LOAD:
-			bine = (BinSEvent)e;
-			if((bine.bin.area.lorry.currentLoadVolume + bine.bin.currentLoadVolume/2.0 <= Lorry.lorryVolume) && (bine.bin.area.lorry.currentLoadWeight+bine.bin.currentLoadWeight<=Lorry.lorryMaxLoad)){
-				bine.volume = (float)(bine.bin.currentLoadVolume/2.0);
-				bine.weight = bine.bin.currentLoadWeight;
-			}else if(bine.bin.area.lorry.currentLoadVolume + bine.bin.currentLoadVolume/2.0 <= Lorry.lorryVolume){
-				bine.weight = Lorry.lorryMaxLoad - bine.bin.area.lorry.currentLoadWeight;
-				bine.volume = bine.bin.currentLoadVolume/bine.bin.currentLoadWeight*bine.weight;
-			}else if(bine.bin.area.lorry.currentLoadWeight+bine.bin.currentLoadWeight<=Lorry.lorryMaxLoad){
-				bine.volume = Lorry.lorryVolume - bine.bin.area.lorry.currentLoadVolume;
-				bine.weight = bine.bin.currentLoadWeight/bine.bin.currentLoadVolume*bine.volume;
-			}else{
-				float tmpvolume, tmpweight;
-				tmpvolume = Lorry.lorryVolume - bine.bin.area.lorry.currentLoadVolume;
-				tmpweight = Lorry.lorryMaxLoad - bine.bin.area.lorry.currentLoadWeight;
-				if(bine.bin.currentLoadVolume/bine.bin.currentLoadWeight*tmpweight <= tmpvolume){
-					bine.weight = tmpweight;
-					bine.volume = (float)(bine.bin.currentLoadVolume/bine.bin.currentLoadWeight*tmpweight/2.0);
-				}else{
-					bine.volume = (float)(tmpvolume/2.0);
-					bine.weight = bine.bin.currentLoadWeight/bine.bin.currentLoadVolume*tmpvolume;
-				}
-			}
-			bine.bin.currentLoadVolume -= bine.volume;
-			bine.bin.currentLoadWeight -= bine.weight;
-			if(bine.bin.currentLoadVolume < Bin.binVolume){
-				bine.bin.area.binExceeded.remove(bine.bin.binId);
-			}
-			if(bine.bin.currentLoadVolume < Bin.binVolume*bine.bin.area.thresholdVal){
-				bine.bin.area.binOverflow.remove(bine.bin.binId);
-			}
-			// add a lorry volume changed event
-			le2 = new LorrySEvent();
-			le2.volume = bine.volume;
-			le2.weight = bine.weight;
-			le2.eventType = SEventType.LORRY_CONTENTS_VOLUME_CHANGED;
-			le2.bin = bine.bin;
-			le2.area = bine.bin.area;
-			le2.time = bine.time;
-			this.eventsQueue.addEvent(le2);
+			// load bin
+			this.binLoad(e);
 			break;
 		case SEventType.BIN_CONTENTS_VOLUME_CHANGED:
-			bine = (BinSEvent)e;
-			bine.bin.currentLoadVolume += bine.volume;
-			bine.bin.currentLoadWeight += bine.weight;
-			// generate a bin event if overflowed or exceeded
-			if(bine.bin.currentLoadVolume > Bin.binVolume){
-				bine2 = new BinSEvent();
-				bine2.time = bine.time;
-				bine2.eventType = SEventType.BIN_OVERFLOWED;
-				bine2.bin = bine.bin;
-				bine2.bag = bine.bag;
-				this.eventsQueue.addEvent(bine2);
-			}else if(bine.bin.currentLoadVolume > Bin.binVolume*bine.bin.area.thresholdVal){
-				bine2 = new BinSEvent();
-				bine2.time = bine.time;
-				bine2.eventType = SEventType.BIN_OCCUPANCY_THRESHOLD_EXCEEDED;
-				bine2.bin = bine.bin;
-				bine2.bag = bine.bag;
-				this.eventsQueue.addEvent(bine2);
-			}
-			bage = User.genBagSEvent(bine.bin);
-			this.eventsQueue.addEvent(bage);
+			// display a bin contents volume changed message and change the contents of bin
+			this.binContentsVolumeChangedEvent(e);
 			break;
 		case SEventType.BIN_OCCUPANCY_THRESHOLD_EXCEEDED:
-			bine = (BinSEvent)e;
-			bine.bin.area.binExceeded.add(bine.bin.binId);
+			// bin overflowed and the bin to occupancy threshold exceeded list
+			this.binOccupancyThresholdExceededEvent(e);
 			break;
 		case SEventType.BIN_OVERFLOWED:
-			bine = (BinSEvent)e;
-			bine.bin.area.binOverflow.add(bine.bin.binId);
+			// bin overflowed and the bin to overflowed list
+			this.binOverflowed(e);
 			break;
-		}
-		if(Simulate.isAbleLogging){
-			System.out.println(e.toString());
 		}
 	}
 	public void runSimulate(){
@@ -220,12 +303,6 @@ public class Simulate {
 				break;
 			}
 			this.modifySystemState(nextEvent);
-/*			try {
-				Thread.sleep(1);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}*/
 		}
 	}
 	public static boolean isAbleLogging() {
@@ -294,7 +371,7 @@ public class Simulate {
 		lexer = new Lexer();
 		lexer.setFilename(filename);
 		// debug
-		Simulate.setAbleLogging(false);
+		//Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
