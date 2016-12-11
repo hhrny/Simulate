@@ -129,6 +129,9 @@ public class Simulate {
 			nextBinLoadEvent.bin = currentLorryEvent.bin;
 			nextBinLoadEvent.bag = null;
 			this.eventsQueue.addEvent(nextBinLoadEvent);
+			// remove the bin from list
+			nextBinLoadEvent.bin.area.binExceeded.remove(nextBinLoadEvent.bin.binId);
+			nextBinLoadEvent.bin.area.binOverflow.remove(nextBinLoadEvent.bin.binId);
 			// and generate a lorry contents volume changed event
 			LorrySEvent nextLorryEvent = new LorrySEvent();
 			nextLorryEvent.eventType = SEventType.LORRY_CONTENTS_VOLUME_CHANGED;
@@ -190,14 +193,8 @@ public class Simulate {
 			System.out.println(e.toString());
 		}
 		// clear the bin
-		if(currentBinEvent.bin.currentLoadVolume >= Bin.binVolume){
-			currentBinEvent.bin.area.binExceeded.remove(currentBinEvent.bin.binId);
-			currentBinEvent.bin.setThresholdExceeded(false);
-		}
-		if(currentBinEvent.bin.currentLoadVolume >= Bin.binVolume*currentBinEvent.bin.area.thresholdVal){
-			currentBinEvent.bin.area.binOverflow.remove(currentBinEvent.bin.binId);
-			currentBinEvent.bin.setOverflowed(false);
-		}
+		currentBinEvent.bin.setThresholdExceeded(false);
+		currentBinEvent.bin.setOverflowed(false);
 		currentBinEvent.bin.currentLoadVolume = 0;
 		currentBinEvent.bin.currentLoadWeight = 0;
 	}
@@ -236,6 +233,7 @@ public class Simulate {
 			System.out.println(e.toString());
 		}
 		currentBinEvent.bin.area.binExceeded.add(currentBinEvent.bin.binId);
+		currentBinEvent.bin.setThresholdExceeded(true);
 	}
 	private void binOverflowed(SEvent e){
 		// display bin overflowed message
@@ -245,6 +243,7 @@ public class Simulate {
 			System.out.println(e.toString());
 		}
 		currentBinEvent.bin.area.binOverflow.add(currentBinEvent.bin.binId);
+		currentBinEvent.bin.setOverflowed(true);
 	}
 	private void modifySystemState(SEvent e){
 		// modify system state according to event
@@ -354,7 +353,7 @@ public class Simulate {
 		if(args.length >= 1){
 			filename = args[0];
 		}else{
-			filename = "conf.txt";
+			filename = "conf3.txt";
 		}
 		// check the file is exist
 		File f = new File(filename);
@@ -371,7 +370,7 @@ public class Simulate {
 		lexer = new Lexer();
 		lexer.setFilename(filename);
 		// debug
-		//Simulate.setAbleLogging(false);
+		Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
