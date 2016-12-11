@@ -11,5 +11,6 @@ public class SEventType {
 		LORRY_LEFT = 3,
 		LORRY_LOAD = 4,
 		LORRY_CONTENTS_VOLUME_CHANGED = 5,
-		SIMULATE_STOP = 10;
+		SIMULATE_STOP = 10,    // simulate stop
+		LORRY_SCHEDULE = 11;   // schedule the lorry
 }

@@ -245,6 +245,30 @@ public class Simulate {
 		currentBinEvent.bin.area.binOverflow.add(currentBinEvent.bin.binId);
 		currentBinEvent.bin.setOverflowed(true);
 	}
+	private void lorrySchedule(SEvent e){
+		// schedule lorry , and there is no message
+		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		// route planning, to get next destination
+		currentLorryEvent.area.lorry.routePlanning();
+		if(currentLorryEvent.area.lorry.destLocation != 0){
+			// there some bin is threshold exceeded
+			LorrySEvent nextLorryEvent = new LorrySEvent();
+			nextLorryEvent.time = currentLorryEvent.time;
+			nextLorryEvent.eventType = SEventType.LORRY_LEFT;
+			nextLorryEvent.area = currentLorryEvent.area;
+			nextLorryEvent.leftLocation = 0;
+			this.eventsQueue.addEvent(nextLorryEvent);
+			// set the number of schedule
+			currentLorryEvent.area.noSchedule ++;
+		}
+		// generate next lorry schedule event and add to event queue
+		LorrySEvent nextLorryScheduleEvent = new LorrySEvent();
+		nextLorryScheduleEvent.time = currentLorryEvent.time + currentLorryEvent.area.serviceFreq;
+		nextLorryScheduleEvent.eventType = SEventType.LORRY_SCHEDULE;
+		nextLorryScheduleEvent.area = currentLorryEvent.area;
+		nextLorryScheduleEvent.leftLocation = 0;
+		this.eventsQueue.addEvent(nextLorryScheduleEvent);
+	}
 	private void modifySystemState(SEvent e){
 		// modify system state according to event
 		switch(e.eventType){
@@ -285,6 +309,10 @@ public class Simulate {
 			// bin overflowed and the bin to overflowed list
 			this.binOverflowed(e);
 			break;
+		case SEventType.LORRY_SCHEDULE:
+			// schedule the lorry to collect rubbish
+			this.lorrySchedule(e);
+			break;
 		}
 	}
 	public void runSimulate(){
@@ -312,31 +340,60 @@ public class Simulate {
 	}
 
 	public void printSummaryStatistics(){
-		int i, alltripduration=0, alltriptimes=0, allnoschedule = 0, allbinoverflowed= 0,allbins= 0;
-		float allwasteweight= 0, allwastevolume=0;
+		int i, alltripduration=0, alltriptimes=0, allnoschedule = 0, allbinoverflowed= 0,allbins= 0, tmpi;
+		float allwasteweight= 0, allwastevolume=0, tmpf;
 		DecimalFormat df = new DecimalFormat("########0.00");  
 		System.out.println("---");
+		// print the average trip duration
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average trip duration "+DateTime.toMinSecString(areas.get(i).getAverageTripDuration()));
 			alltripduration += areas.get(i).allTripDuration;
 			alltriptimes += areas.get(i).allTripTimes;
 		}
-		System.out.println("overall average trip duration "+DateTime.toMinSecString((alltripduration/alltriptimes)));
+		if(alltriptimes == 0){
+			tmpi = 0;
+		}
+		else{
+			tmpi = alltripduration/alltriptimes;
+		}
+		System.out.println("overall average trip duration "+DateTime.toMinSecString(tmpi));
+		// print the average no. trip
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average no. trip "+df.format(areas.get(i).getNoTripsPerSchedule()));
 			allnoschedule += areas.get(i).getNoSchedule();
 		}
-		System.out.println("overall average no. trip " + df.format(((float)alltriptimes/allnoschedule)));
+		if(allnoschedule == 0){
+			tmpf = 0;
+		}
+		else{
+			tmpf = (float)alltriptimes/allnoschedule;
+		}
+		System.out.println("overall average no. trip " + df.format(tmpf));
+		// print the trip efficiency
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": trip efficiency "+df.format(areas.get(i).getTripEfficiency()));// kg/min
 			allwasteweight += areas.get(i).allWasteWeight;
 		}
-		System.out.println("overall trip efficiency "+df.format(allwasteweight*60/alltripduration));   // kg/min
+		if(alltripduration == 0){
+			tmpf = 0;
+		}
+		else{
+			tmpf = allwasteweight*60/alltripduration;
+		}
+		System.out.println("overall trip efficiency "+df.format(tmpf));   // kg/min
+		// print the average volume collected
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average volume collected "+df.format(areas.get(i).getAverageVolumeCollected()));
 			allwastevolume += areas.get(i).allWasteVolume;
 		}
-		System.out.println("overall average volume collected "+df.format(allwastevolume/alltriptimes));
+		if(alltriptimes == 0){
+			tmpf = 0;
+		}
+		else{
+			tmpf = allwastevolume/alltriptimes;
+		}
+		System.out.println("overall average volume collected "+df.format(tmpf));
+		// print the percentage of bins overflowed
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()));
 			allbins += areas.get(i).bins.length;

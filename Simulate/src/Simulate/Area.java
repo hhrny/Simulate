@@ -22,7 +22,7 @@ public class Area {
 	public Set<Integer> binOverflow = new HashSet<Integer>();
 	public Set<Integer> binExceeded = new HashSet<Integer>();
 	
-	// statistics param
+	// statistics parameter
 	public int allTripDuration = 0;   // all trips duration; seconds
 	public int allTripTimes = 0;     // number of trips
 	
@@ -68,23 +68,21 @@ public class Area {
 			SEvent e = User.genBagSEvent(bins[i]);
 			this.addEventToQueue(e);
 		}
-		int tmp = this.serviceFreq;
-		while(tmp <= Simulate.stopTime){
-			LorrySEvent le = new LorrySEvent();
-			le.time = tmp;
-			le.eventType = SEventType.LORRY_LEFT;
-			le.area = this;
-			le.leftLocation = 0;
-			this.addEventToQueue(le);
-			tmp += this.serviceFreq;
-			noSchedule ++;
-		}
+		LorrySEvent lorryScheduleEvent = new LorrySEvent();
+		lorryScheduleEvent.time = this.serviceFreq;
+		lorryScheduleEvent.eventType = SEventType.LORRY_SCHEDULE;
+		lorryScheduleEvent.area = this;
+		lorryScheduleEvent.leftLocation = 0;
+		this.addEventToQueue(lorryScheduleEvent);
 	}
 	public void addEventToQueue(SEvent event){
 		simulate.eventsQueue.addEvent(event);
 	}
 	public int getAverageTripDuration(){
 		// minutes:seconds
+		if(this.allTripTimes == 0){
+			return 0;
+		}
 		return this.allTripDuration/this.allTripTimes;
 	}
 	public int getNumberOfTrips(){
@@ -93,16 +91,25 @@ public class Area {
 	}
 	public float getTripEfficiency(){
 		// kg/min
+		if(this.allTripDuration == 0){
+			return 0;
+		}
 		return (float)this.allWasteWeight*60/this.allTripDuration;
 	}
 	public float getAverageVolumeCollected(){
 		// m^3
+		if(allTripTimes == 0){
+			return 0;
+		}
 		return (float)allWasteVolume/allTripTimes;
 	}
 	public int getNoSchedule(){
 		return noSchedule;
 	}
 	public float getNoTripsPerSchedule(){
+		if(noSchedule == 0){
+			return 0;
+		}
 		return (float)allTripTimes/noSchedule;
 	}
 	public int getNoBinOverflowed(){
