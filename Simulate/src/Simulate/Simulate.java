@@ -410,7 +410,7 @@ public class Simulate {
 		if(args.length >= 1){
 			filename = args[0];
 		}else{
-			filename = "conf3.txt";
+			filename = "conf6.txt";
 		}
 		// check the file is exist
 		File f = new File(filename);
@@ -427,7 +427,7 @@ public class Simulate {
 		lexer = new Lexer();
 		lexer.setFilename(filename);
 		// debug
-		Simulate.setAbleLogging(false);
+		// Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){

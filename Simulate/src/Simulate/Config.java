@@ -153,13 +153,13 @@ public class Config {
 		}
 		// check the disposalDistrRate and serviceFreq
 		int i,j;
-		if(this.expDisposalDistrRate == null && this.expServiceFreq == null){
+		if((! this.isDDRexp) && (! this.isSFexp)){
 			for(i = 0; i < this.getAreas().size(); i ++){
 				if(this.disposalDistrRate < this.getAreas().get(i).getServiceFreq()){
 					System.err.println("Warning: disposal rate exceeds service rate in area "+i+".");
 				}
 			}
-		}else if(this.expDisposalDistrRate != null && this.expServiceFreq == null){
+		}else if(this.isDDRexp && (! this.isSFexp)){
 			for(i = 0; i < this.noExp; i ++){
 				for(j = 0; j < this.getAreas().size(); j ++){
 					if(this.expDisposalDistrRate.get(i) < this.getAreas().get(j).getServiceFreq()){
@@ -167,7 +167,7 @@ public class Config {
 					}
 				}
 			}	
-		}else if(this.expDisposalDistrRate == null && this.expServiceFreq != null){
+		}else if((! this.isDDRexp) && this.isSFexp){
 			for(i = 0; i < this.noExp; i ++){
 				if(this.disposalDistrRate < this.expServiceFreq.get(i)){
 					System.err.println("Warning: disposal rate exceeds service rate in experiment "+(i+1)+".");
