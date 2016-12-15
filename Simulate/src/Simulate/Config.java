@@ -759,27 +759,9 @@ public class Config {
 		}
 		return null;
 	}
-	// test main function of generate configure
-	public static void main(String []args){
-		Lexer lexer = new Lexer();
-		if(args.length == 1){
-			lexer.setFilename(args[0]);
-		}else{
-			lexer.setFilename("conf4.txt");
-		}
-		Config cf = Config.genFromLexer(lexer);
-		if(cf != null){
-			cf.print();
-		}
-		else{
-			System.out.println("can not generate config!");
-		}
-	}
-	public boolean isExperiment() {
+	// is experiment
+	boolean isExperiment() {
 		return isExperiment;
-	}
-	public void setExperiment(boolean isExperiment) {
-		this.isExperiment = isExperiment;
 	}
 	// get experiment configure of index
 	public Config getExperiment(int index){
@@ -794,25 +776,32 @@ public class Config {
 		return this.experiments.get(index);
 	}
 	// print experiment configure parameter of index
-	void printConfigureParameter(int index){
+	String printConfigureParameter(int index){
+		String result = "";
 		if(this.isExperiment == false){
 			System.out.println("Warming: There is no experiments!");
-			return;
+			return "Warming: There is no experiments!";
 		}
 		if(index < 0 || index >= this.noExp){
 			System.out.println("Warming: Index of experiment is out of range!");
-			return;
+			return "Warming: Index of experiment is out of range!";
 		}
 		System.out.print("\nExperiment #"+(index+1));
+		result += ("\nExperiment #"+(index+1));
 		if(this.isDDRexp){
 			System.out.print(" disposalDistrRate "+this.disposalDistrRate);
 		}
+		result += (" disposalDistrRate "+this.disposalDistrRate);
 		if(this.isDDSexp){
 			System.out.print(" disposalDistrShape "+this.disposalDistrShape);
 		}
+		result += (" disposalDistrShape "+this.disposalDistrShape);
 		if(this.isSFexp){
 			System.out.print(" serviceFreq "+this.areasConfig.get(0).getServiceFreq());
 		}
+		result += (" serviceFreq "+this.areasConfig.get(0).getServiceFreq());
 		System.out.println("\n");
+		result += "\n";
+		return result;
 	}
 }

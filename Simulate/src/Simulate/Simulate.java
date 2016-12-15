@@ -1,6 +1,8 @@
 package Simulate;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Vector;
 
@@ -17,6 +19,12 @@ public class Simulate {
 	public EventsQueue eventsQueue = new EventsQueue();
 	
 	private static boolean isAbleLogging = true;
+	
+	// statistic file
+	private File statisticFileName;
+	private FileWriter statisticFW;
+	private File sf1,sf2,sf3;
+	private FileWriter s1, s2, s3;
 	
 	public void initSimulate(Config cf){
 		// set the param of config
@@ -339,14 +347,17 @@ public class Simulate {
 		Simulate.isAbleLogging = isAbleLogging;
 	}
 
-	public void printSummaryStatistics(){
+	public String printSummaryStatistics(){
 		int i, alltripduration=0, alltriptimes=0, allnoschedule = 0, allbinoverflowed= 0,allbins= 0, tmpi;
 		float allwasteweight= 0, allwastevolume=0, tmpf;
+		String result = "";
 		DecimalFormat df = new DecimalFormat("########0.00");  
 		System.out.println("---");
+		result += "---\n";
 		// print the average trip duration
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average trip duration "+DateTime.toMinSecString(areas.get(i).getAverageTripDuration()));
+			result += ("area " + i + ": average trip duration "+DateTime.toMinSecString(areas.get(i).getAverageTripDuration()) + "\n");
 			alltripduration += areas.get(i).allTripDuration;
 			alltriptimes += areas.get(i).allTripTimes;
 		}
@@ -357,9 +368,11 @@ public class Simulate {
 			tmpi = alltripduration/alltriptimes;
 		}
 		System.out.println("overall average trip duration "+DateTime.toMinSecString(tmpi));
+		result += ("overall average trip duration "+DateTime.toMinSecString(tmpi) + "\n");
 		// print the average no. trip
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average no. trip "+df.format(areas.get(i).getNoTripsPerSchedule()));
+			result += ("area " + i + ": average no. trip "+df.format(areas.get(i).getNoTripsPerSchedule()) + "\n");
 			allnoschedule += areas.get(i).getNoSchedule();
 		}
 		if(allnoschedule == 0){
@@ -369,9 +382,11 @@ public class Simulate {
 			tmpf = (float)alltriptimes/allnoschedule;
 		}
 		System.out.println("overall average no. trip " + df.format(tmpf));
+		result += ("overall average no. trip " + df.format(tmpf) + "\n");
 		// print the trip efficiency
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": trip efficiency "+df.format(areas.get(i).getTripEfficiency()));// kg/min
+			result += ("area " + i + ": trip efficiency "+df.format(areas.get(i).getTripEfficiency()) + "\n");
 			allwasteweight += areas.get(i).allWasteWeight;
 		}
 		if(alltripduration == 0){
@@ -381,9 +396,17 @@ public class Simulate {
 			tmpf = allwasteweight*60/alltripduration;
 		}
 		System.out.println("overall trip efficiency "+df.format(tmpf));   // kg/min
+		result += ("overall trip efficiency "+df.format(tmpf) + "\n");
+		try {
+			s1.write("" + df.format(tmpf) + "\n");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// print the average volume collected
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": average volume collected "+df.format(areas.get(i).getAverageVolumeCollected()));
+			result += ("area " + i + ": average volume collected "+df.format(areas.get(i).getAverageVolumeCollected()) + "\n");
 			allwastevolume += areas.get(i).allWasteVolume;
 		}
 		if(alltriptimes == 0){
@@ -393,14 +416,64 @@ public class Simulate {
 			tmpf = allwastevolume/alltriptimes;
 		}
 		System.out.println("overall average volume collected "+df.format(tmpf));
+		result += ("overall average volume collected "+df.format(tmpf) + "\n");
 		// print the percentage of bins overflowed
 		for(i = 0; i < Simulate.noAreas; i ++){
 			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()));
+			result += ("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()) + "\n");
 			allbins += areas.get(i).bins.length;
 			allbinoverflowed += areas.get(i).getNoBinOverflowed();
 		}
 		System.out.println("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins));
 		System.out.println("---");
+		result += ("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins) + "\n---\n");
+		return result;
+	}
+	void startStatistic(){
+		// statistic file
+		statisticFileName = new File("./Statistic/statistic");
+		if (! statisticFileName.exists()) {
+			try {
+				statisticFileName.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		try {
+			statisticFW = new FileWriter(statisticFileName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("Error: Can not open statistic file!");
+			e.printStackTrace();
+		}
+		// s1
+		statisticFileName = new File("./Statistic/s1");
+		if (! statisticFileName.exists()) {
+			try {
+				statisticFileName.createNewFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		try {
+			s1 = new FileWriter(statisticFileName);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("Error: Can not open statistic file!");
+			e.printStackTrace();
+		}
+	}
+	void endStatistic(){
+		try {
+			statisticFW.close();
+			s1.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.err.println("Error: Statistic file close error!");
+			e.printStackTrace();
+		}
 	}
 	public static void main(String []args){
 		int i;
@@ -410,7 +483,7 @@ public class Simulate {
 		if(args.length >= 1){
 			filename = args[0];
 		}else{
-			filename = "conf6.txt";
+			filename = "conf.txt";
 		}
 		// check the file is exist
 		File f = new File(filename);
@@ -427,7 +500,7 @@ public class Simulate {
 		lexer = new Lexer();
 		lexer.setFilename(filename);
 		// debug
-		// Simulate.setAbleLogging(false);
+		Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
@@ -440,17 +513,37 @@ public class Simulate {
 		Simulate simulate = new Simulate();
 		// experiment
 		if(cf.isExperiment()){
+			simulate.startStatistic();
+			// print the statistic information to file
+			String s = "";
+			if(cf.isDDRexp){s += cf.expDisposalDistrRate.size();}else{s += "0";}
+			s += "\t";
+			if(cf.isDDSexp){s += cf.expDisposalDistrShape.size();}else{s += "0";}
+			s += "\t";
+			if(cf.isSFexp){s += cf.expServiceFreq.size();}else{s += "0";}
+			s += "\n";
+			try { simulate.s1.write(s);
+			} catch (IOException e1) {e1.printStackTrace();}
 			// if there is a experiment parameter
 			for(i = 0; i < cf.noExp; i ++){
 			//for(i = 0; i < 1; i ++){
 				simulate.initSimulate(cf.getExperiment(i));
 				// print the parameter of configure
-				cf.getExperiment(i).printConfigureParameter(i);
+				String slog = cf.getExperiment(i).printConfigureParameter(i);
+				s = "" + cf.getExperiment(i).getDisposalDistrRate() + "\t" + cf.getExperiment(i).getDisposalDistrShape() + "\t"
+						+ cf.getExperiment(i).getAreas().get(0).getServiceFreq() + "\t";
+				try {simulate.s1.write(s);} catch (IOException e1) {e1.printStackTrace();}
 				// run simulate
 				simulate.runSimulate();
 				// print summary statistics
-				simulate.printSummaryStatistics();
+				slog += simulate.printSummaryStatistics();
+				try {simulate.statisticFW.append(slog);
+				} catch (IOException e) {
+					System.err.println("Error: can not append the statistic information to statistic file!");
+					e.printStackTrace();
+				}
 			}
+			simulate.endStatistic();
 		}
 		else
 		{

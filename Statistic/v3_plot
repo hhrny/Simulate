@@ -1,0 +1,6 @@
+set terminal png
+set output "./v3.png"
+set title "statistic"
+set xlabel "service frequent"
+set ylabel "trip efficiency"
+plot "v3" with linespoints

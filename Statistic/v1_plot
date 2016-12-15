@@ -1,0 +1,6 @@
+set terminal png
+set output "./v1.png"
+set title "statistic"
+set xlabel "disposal distrbute rate"
+set ylabel "trip efficiency"
+plot "v1" with linespoints
