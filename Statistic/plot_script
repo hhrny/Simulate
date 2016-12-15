@@ -1,6 +1,0 @@
-set terminal png
-set output "./Statistic/s1.png"
-set title "statistic"
-set xlabel "x"
-set ylabel "y"
-plot "statistic" with linespoints

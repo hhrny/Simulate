@@ -29,21 +29,20 @@ else
     java -cp "./Simulate/bin:/lib/*" Visualisation.Visualisation "./Statistic/s1"
     
     # generate the visualisation of statistic
-    cd ./Statistic
-    num=$(wc -l ./v1 | awk '{print $1}')
+    num=$(wc -l ./Statistic/v1 | awk '{print $1}')
     if [ ${num} -gt 1 ]
     then
-        gnuplot ./v1_plot
+        gnuplot ./Visualisation/v1_plot
     fi
-    num=$(wc -l ./v2 | awk '{print $1}')
+    num=$(wc -l ./Statistic/v2 | awk '{print $1}')
     if [ ${num} -gt 1 ]
     then
-        gnuplot ./v2_plot
+        gnuplot ./Visualisation/v2_plot
     fi
-    num=$(wc -l ./v3 | awk '{print $1}')
+    num=$(wc -l ./Statistic/v3 | awk '{print $1}')
     if [ ${num} -gt 1 ]
     then
-        gnuplot ./v3_plot
+        gnuplot ./Visualisation/v3_plot
     fi
 fi
 
