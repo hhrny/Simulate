@@ -23,8 +23,7 @@ public class Simulate {
 	// statistic file
 	private File statisticFileName;
 	private FileWriter statisticFW;
-	private File sf1,sf2,sf3;
-	private FileWriter s1, s2, s3;
+	private FileWriter s1;
 	
 	public void initSimulate(Config cf){
 		// set the param of config
@@ -86,7 +85,7 @@ public class Simulate {
 			System.out.println(e.toString());
 		}
 		// route planning, to get next destination
-		currentLorryEvent.area.lorry.routePlanning();
+//		currentLorryEvent.area.lorry.routePlanning();
 		
 		// generate next lorry arrived event
 		LorrySEvent nextLorryArrivedEvent = new LorrySEvent();
@@ -94,10 +93,10 @@ public class Simulate {
 		nextLorryArrivedEvent.time = currentLorryEvent.time + currentLorryEvent.area.lorry.rp.getTime(currentLorryEvent.area.lorry.currentLocation, currentLorryEvent.area.lorry.destLocation);
 		nextLorryArrivedEvent.area = currentLorryEvent.area;
 		nextLorryArrivedEvent.leftLocation = currentLorryEvent.area.lorry.currentLocation;
-		if(currentLorryEvent.area.lorry.destLocation > 0){
+		if(currentLorryEvent.arrivedLocation > 0){
 			// go to next bin
 			//System.err.println(nextLorryArrivedEvent.arrivedLocation);
-			nextLorryArrivedEvent.arrivedLocation = currentLorryEvent.area.lorry.destLocation;
+			nextLorryArrivedEvent.arrivedLocation = currentLorryEvent.arrivedLocation;
 			//System.err.println(nextLorryArrivedEvent.arrivedLocation);
 			nextLorryArrivedEvent.bin = currentLorryEvent.area.bins[nextLorryArrivedEvent.arrivedLocation-1];
 		}
@@ -130,6 +129,23 @@ public class Simulate {
 			this.eventsQueue.addEvent(nextLorryEvent);
 		}
 		else{
+			// 
+			if(currentLorryEvent.bin.currentLoadVolume > Lorry.lorryVolume - currentLorryEvent.area.lorry.currentLoadVolume
+					|| currentLorryEvent.bin.currentLoadWeight > Lorry.lorryMaxLoad - currentLorryEvent.area.lorry.currentLoadWeight){
+				// go back to location 0
+				// generate next lorry left event
+				LorrySEvent nextLorryLeftEvent = new LorrySEvent();
+				nextLorryLeftEvent.time = currentLorryEvent.time;
+				nextLorryLeftEvent.eventType = SEventType.LORRY_LEFT;
+				nextLorryLeftEvent.area = currentLorryEvent.area;
+				nextLorryLeftEvent.bin = currentLorryEvent.bin;
+				nextLorryLeftEvent.leftLocation = currentLorryEvent.area.lorry.currentLocation;
+				nextLorryLeftEvent.area.lorry.destLocation = nextLorryLeftEvent.arrivedLocation = 0;
+				this.eventsQueue.addEvent(nextLorryLeftEvent);
+				return;
+			}
+			//
+			currentLorryEvent.area.lorry.rp.nextLocation();
 			// arrived at destination bin, load the bin than add a load bin event
 			BinSEvent nextBinLoadEvent = new BinSEvent();
 			nextBinLoadEvent.time = currentLorryEvent.time + (int)Bin.binServiceTime;
@@ -140,20 +156,15 @@ public class Simulate {
 			// remove the bin from list
 			nextBinLoadEvent.bin.area.binExceeded.remove(nextBinLoadEvent.bin.binId);
 			nextBinLoadEvent.bin.area.binOverflow.remove(nextBinLoadEvent.bin.binId);
-			// and generate a lorry contents volume changed event
-			LorrySEvent nextLorryEvent = new LorrySEvent();
-			nextLorryEvent.eventType = SEventType.LORRY_CONTENTS_VOLUME_CHANGED;
-			nextLorryEvent.time = nextBinLoadEvent.time;
-			nextLorryEvent.area = currentLorryEvent.area;
-			nextLorryEvent.bin = currentLorryEvent.bin;
-			nextLorryEvent.weight = nextBinLoadEvent.bin.currentLoadWeight;
-			nextLorryEvent.volume = nextBinLoadEvent.bin.currentLoadVolume/2;
-			this.eventsQueue.addEvent(nextLorryEvent);
 		}
 	}
 	private void lorryContentsVolumeChangedEvent(SEvent e){
 		// display the current lorry event
 		LorrySEvent currentLorryEvent = (LorrySEvent)e;
+		if(Simulate.isAbleLogging){
+			// if display the message
+			System.out.println(e.toString());
+		}
 		currentLorryEvent.area.lorry.currentLoadVolume += currentLorryEvent.volume;
 		currentLorryEvent.area.lorry.currentLoadWeight += currentLorryEvent.weight;
 		// statistic
@@ -169,6 +180,7 @@ public class Simulate {
 		nextLorryLeftEvent.area = currentLorryEvent.area;
 		nextLorryLeftEvent.bin = currentLorryEvent.bin;
 		nextLorryLeftEvent.leftLocation = currentLorryEvent.area.lorry.currentLocation;
+		nextLorryLeftEvent.arrivedLocation = nextLorryLeftEvent.area.lorry.destLocation = nextLorryLeftEvent.area.lorry.rp.getNextLocaltion();
 		this.eventsQueue.addEvent(nextLorryLeftEvent);
 	}
 	private void lorryLoad(SEvent e){
@@ -203,6 +215,16 @@ public class Simulate {
 		// clear the bin
 		currentBinEvent.bin.setThresholdExceeded(false);
 		currentBinEvent.bin.setOverflowed(false);
+		// and generate a lorry contents volume changed event
+		LorrySEvent nextLorryEvent = new LorrySEvent();
+		nextLorryEvent.eventType = SEventType.LORRY_CONTENTS_VOLUME_CHANGED;
+		nextLorryEvent.time = currentBinEvent.time;
+		nextLorryEvent.area = currentBinEvent.bin.area;
+		nextLorryEvent.bin = currentBinEvent.bin;
+		nextLorryEvent.weight = currentBinEvent.bin.currentLoadWeight;
+		nextLorryEvent.volume = currentBinEvent.bin.currentLoadVolume/2;
+		this.eventsQueue.addEvent(nextLorryEvent);
+		// clear the bin volume and weight
 		currentBinEvent.bin.currentLoadVolume = 0;
 		currentBinEvent.bin.currentLoadWeight = 0;
 	}
@@ -251,6 +273,7 @@ public class Simulate {
 			System.out.println(e.toString());
 		}
 		currentBinEvent.bin.area.binOverflow.add(currentBinEvent.bin.binId);
+		currentBinEvent.bin.area.binOverflowed.add(currentBinEvent.bin.binId);
 		currentBinEvent.bin.setOverflowed(true);
 	}
 	private void lorrySchedule(SEvent e){
@@ -258,6 +281,8 @@ public class Simulate {
 		LorrySEvent currentLorryEvent = (LorrySEvent)e;
 		// route planning, to get next destination
 		currentLorryEvent.area.lorry.routePlanning();
+		currentLorryEvent.area.lorry.destLocation = currentLorryEvent.area.lorry.rp.getNextLocaltion();
+		// if the destination location is not 0, the lorry will work 
 		if(currentLorryEvent.area.lorry.destLocation != 0){
 			// there some bin is threshold exceeded
 			LorrySEvent nextLorryEvent = new LorrySEvent();
@@ -265,6 +290,7 @@ public class Simulate {
 			nextLorryEvent.eventType = SEventType.LORRY_LEFT;
 			nextLorryEvent.area = currentLorryEvent.area;
 			nextLorryEvent.leftLocation = 0;
+			nextLorryEvent.arrivedLocation = currentLorryEvent.area.lorry.destLocation;
 			this.eventsQueue.addEvent(nextLorryEvent);
 			// set the number of schedule
 			currentLorryEvent.area.noSchedule ++;
@@ -500,7 +526,7 @@ public class Simulate {
 		lexer = new Lexer();
 		lexer.setFilename(filename);
 		// debug
-		Simulate.setAbleLogging(false);
+		//Simulate.setAbleLogging(false);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){

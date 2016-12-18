@@ -376,10 +376,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.expDisposalDistrRate != null){
 					System.err.println("Warning: Parameter disposalDistrRate is configure again!");
-//					while(lexer.hasNextToken() && (lexer.getNextToken().tag == Tag.FLOAT || lexer.getNextToken().tag == Tag.INT)){
-//						tmp = lexer.nextToken();
-//					}
-//					return false;
 				}
 				// check the parameter and value in same line
 				if(paramName.line != tmp.line){
@@ -443,10 +439,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.expDisposalDistrShape != null){
 					System.err.println("Warning: Parameter disposalDistrShape is configure again!");
-//					while(lexer.getNextToken().tag == Tag.INT){
-//						tmp = lexer.nextToken();
-//					}
-//					return false;
 				}
 				this.expDisposalDistrShape = new Vector<Integer>();
 				while(lexer.hasNextToken() && lexer.getNextToken().isInteger()){
@@ -486,10 +478,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.expServiceFreq != null){
 					System.err.println("Warning: Parameter serviceFreq is configure again!");
-//					while(lexer.hasNextToken() && (lexer.getNextToken().tag == Tag.FLOAT || lexer.getNextToken().tag == Tag.INT)){
-//						tmp = lexer.nextToken();
-//					}
-//					return false;
 				}
 				// configure the experiment serviceFreq
 				this.expServiceFreq = new Vector<Float>();

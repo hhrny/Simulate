@@ -22,6 +22,8 @@ public class Area {
 	public Set<Integer> binOverflow = new HashSet<Integer>();
 	public Set<Integer> binExceeded = new HashSet<Integer>();
 	
+	public Set<Integer> binOverflowed = new HashSet<Integer>();
+	
 	// statistics parameter
 	public int allTripDuration = 0;   // all trips duration; seconds
 	public int allTripTimes = 0;     // number of trips
@@ -113,7 +115,7 @@ public class Area {
 		return (float)allTripTimes/noSchedule;
 	}
 	public int getNoBinOverflowed(){
-		return binOverflow.size();
+		return binOverflowed.size();
 	}
 	public float getPercentageOfBinOverflowed(){
 		return (float)getNoBinOverflowed()/bins.length;
