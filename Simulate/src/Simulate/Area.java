@@ -7,12 +7,6 @@ import java.util.Set;
 public class Area {
 	public int areaIdx;
 	public int serviceFreq;
-	public int getServiceFreq() {
-		return serviceFreq;
-	}
-	public void setServiceFreq(double sFreq) {
-		this.serviceFreq = (int)(1.0/sFreq*360);
-	}
 	public float thresholdVal;
 	public int noBins;
 	public int[][] roadsLayout;    // road layout and distances between bin location ( in minutes)
@@ -23,6 +17,8 @@ public class Area {
 	public Set<Integer> binExceeded = new HashSet<Integer>();
 	
 	public Set<Integer> binOverflowed = new HashSet<Integer>();
+	public Set<Integer> overflowed = new HashSet<Integer>();
+	public int noOverflowed = 0;
 	
 	// statistics parameter
 	public int allTripDuration = 0;   // all trips duration; seconds
@@ -35,10 +31,11 @@ public class Area {
 	public float allWasteWeight = 0;    // kg
 	public float allWasteVolume = 0;
 	
-//	public static Comparator<> comparator;
-	
-	public Area(){
-		
+	public int getServiceFreq() {
+		return serviceFreq;
+	}
+	public void setServiceFreq(double sFreq) {
+		this.serviceFreq = (int)(1.0/sFreq*360);
 	}
 	public void configArea(AreaConfig acf){
 		this.areaIdx = acf.getAreaIdx();
@@ -114,8 +111,13 @@ public class Area {
 		}
 		return (float)allTripTimes/noSchedule;
 	}
+	// get the all bin overflowed in the simulate
 	public int getNoBinOverflowed(){
 		return binOverflowed.size();
+	}
+	// get the average bin overflow each schedule
+	public float getBinOverflowedRate(){
+		return (float)(this.noOverflowed+this.overflowed.size())/(this.noSchedule+1);
 	}
 	public float getPercentageOfBinOverflowed(){
 		return (float)getNoBinOverflowed()/bins.length;

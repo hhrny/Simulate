@@ -520,7 +520,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.bagVolume != -1){
 					System.err.println("Warning: Parameter bagVolume is configure again!");
-//					return false;
 				}
 				this.setBagVolume(Float.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line
@@ -546,7 +545,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.bagWeightMin != -1){
 					System.err.println("Warning: Parameter bagWeightMin is configure again!");
-//					return false;
 				}
 				this.setBagWeightMin(Float.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line
@@ -569,7 +567,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.bagWeightMax != -1){
 					System.err.println("Warning: Parameter bagWeightMax is configure again!");
-//					return false;
 				}
 				this.setBagWeightMax(Float.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line
@@ -594,7 +591,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.noAreas != -1){
 					System.err.println("Warning: Parameter noAreas is configure again!");
-//					return false;
 				}
 				this.setNoAreas(Integer.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line
@@ -624,7 +620,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.stopTime != -1){
 					System.err.println("Warning: Parameter stopTime is configure again!");
-//					return false;
 				}
 				this.setStopTime(Float.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line
@@ -649,7 +644,6 @@ public class Config {
 				// check the parameter whether is configure again
 				if(this.warmUpTime != -1){
 					System.err.println("Warning: Parameter warmUpTime is configure again!");
-//					return false;
 				}
 				this.setWarmUpTime(Float.valueOf(((Num)tmp).val));
 				// check the parameter and value in same line

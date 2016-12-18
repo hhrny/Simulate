@@ -302,6 +302,9 @@ public class Simulate {
 		nextLorryScheduleEvent.area = currentLorryEvent.area;
 		nextLorryScheduleEvent.leftLocation = 0;
 		this.eventsQueue.addEvent(nextLorryScheduleEvent);
+		// compute the bin overflowed rate
+		currentLorryEvent.area.noOverflowed += currentLorryEvent.area.overflowed.size();
+		currentLorryEvent.area.overflowed.clear();
 	}
 	private void modifySystemState(SEvent e){
 		// modify system state according to event
@@ -423,6 +426,7 @@ public class Simulate {
 		}
 		System.out.println("overall trip efficiency "+df.format(tmpf));   // kg/min
 		result += ("overall trip efficiency "+df.format(tmpf) + "\n");
+		
 		try {
 			s1.write("" + df.format(tmpf) + "\n");
 		} catch (IOException e) {
@@ -443,18 +447,28 @@ public class Simulate {
 		}
 		System.out.println("overall average volume collected "+df.format(tmpf));
 		result += ("overall average volume collected "+df.format(tmpf) + "\n");
-		// print the percentage of bins overflowed
+//		// print the percentage of bins overflowed
+//		for(i = 0; i < Simulate.noAreas; i ++){
+//			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()));
+//			result += ("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()) + "\n");
+//			allbins += areas.get(i).bins.length;
+//			allbinoverflowed += areas.get(i).getNoBinOverflowed();
+//		}
+//		System.out.println("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins));
+//		System.out.println("---");
+//		result += ("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins) + "\n---\n");
 		for(i = 0; i < Simulate.noAreas; i ++){
-			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()));
-			result += ("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getPercentageOfBinOverflowed()) + "\n");
+			System.out.println("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getBinOverflowedRate()));
+			result += ("area " + i + ": percentage of bins overflowed "+df.format(areas.get(i).getBinOverflowedRate()) + "\n");
 			allbins += areas.get(i).bins.length;
-			allbinoverflowed += areas.get(i).getNoBinOverflowed();
+			allbinoverflowed += (areas.get(i).noOverflowed + areas.get(i).overflowed.size());
 		}
 		System.out.println("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins));
 		System.out.println("---");
 		result += ("overall percentage of bins overflowed "+df.format((float)allbinoverflowed/allbins) + "\n---\n");
 		return result;
 	}
+	// start statistic
 	void startStatistic(){
 		// statistic file
 		statisticFileName = new File("./Statistic/statistic");
@@ -491,6 +505,7 @@ public class Simulate {
 			e.printStackTrace();
 		}
 	}
+	// end statistic
 	void endStatistic(){
 		try {
 			statisticFW.close();
@@ -502,19 +517,10 @@ public class Simulate {
 		}
 	}
 	public static void main(String []args){
-		int i;
-		String filename;
-		Lexer lexer;
-		// lexer analyze
-		if(args.length >= 1){
-			filename = args[0];
-		}else{
-			filename = "conf.txt";
-		}
-		// check the file is exist
-		File f = new File(filename);
+		// get the configuration file and check the file is exist
+		File f = new File(args[0]);
 		if(! f.exists()){
-			System.out.println("The input file " + filename + " no exist!");
+			System.out.println("The input file " + args[0] + " no exist!");
 			return;
 		}
 		// set the parameter disable logging
@@ -523,10 +529,9 @@ public class Simulate {
 				Simulate.setAbleLogging(false);
 			}
 		}
-		lexer = new Lexer();
-		lexer.setFilename(filename);
-		// debug
-		//Simulate.setAbleLogging(false);
+		// lexer analyze
+		Lexer lexer = new Lexer();
+		lexer.setFilename(args[0]);
 		// generate configure from lexer
 		Config cf = Config.genFromLexer(lexer);
 		if(cf != null){
@@ -537,28 +542,48 @@ public class Simulate {
 			return;
 		}
 		Simulate simulate = new Simulate();
-		// experiment
+		
 		if(cf.isExperiment()){
+			// experiment
 			simulate.startStatistic();
 			// print the statistic information to file
 			String s = "";
-			if(cf.isDDRexp){s += cf.expDisposalDistrRate.size();}else{s += "0";}
+			if(cf.isDDRexp){
+				s += cf.expDisposalDistrRate.size();
+			}else{
+					s += "0";
+			}
 			s += "\t";
-			if(cf.isDDSexp){s += cf.expDisposalDistrShape.size();}else{s += "0";}
+			if(cf.isDDSexp){
+				s += cf.expDisposalDistrShape.size();
+			}else{
+				s += "0";
+			}
 			s += "\t";
-			if(cf.isSFexp){s += cf.expServiceFreq.size();}else{s += "0";}
+			if(cf.isSFexp){
+				s += cf.expServiceFreq.size();
+			}else{
+				s += "0";
+			}
 			s += "\n";
-			try { simulate.s1.write(s);
-			} catch (IOException e1) {e1.printStackTrace();}
+			try { 
+				simulate.s1.write(s);
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 			// if there is a experiment parameter
-			for(i = 0; i < cf.noExp; i ++){
+			for(int i = 0; i < cf.noExp; i ++){
 			//for(i = 0; i < 1; i ++){
 				simulate.initSimulate(cf.getExperiment(i));
 				// print the parameter of configure
 				String slog = cf.getExperiment(i).printConfigureParameter(i);
 				s = "" + cf.getExperiment(i).getDisposalDistrRate() + "\t" + cf.getExperiment(i).getDisposalDistrShape() + "\t"
 						+ cf.getExperiment(i).getAreas().get(0).getServiceFreq() + "\t";
-				try {simulate.s1.write(s);} catch (IOException e1) {e1.printStackTrace();}
+				try {
+					simulate.s1.write(s);
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
 				// run simulate
 				simulate.runSimulate();
 				// print summary statistics
@@ -573,11 +598,13 @@ public class Simulate {
 		}
 		else
 		{
+			simulate.startStatistic();
 			simulate.initSimulate(cf);
 			// run simulate
 			simulate.runSimulate();
 			// print summary statistics
 			simulate.printSummaryStatistics();
+			simulate.endStatistic();
 		}
 	}
 }

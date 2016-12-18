@@ -14,10 +14,7 @@ public class Visualisation {
 		int nodr, nods, nosq;
 		float fdr, fds, fsq, fval;
 		float dr, ds, sq, val;
-//		if(args.length != 1){
-//			return;
-//		}
-//		file = new File(args[0]);
+
 		file = new File("./Statistic/s1");
 		if(! file.exists()){
 			System.err.println("Error: the file "+ args[0] + " no exist!");
