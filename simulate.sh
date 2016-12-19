@@ -25,24 +25,29 @@ else
     else
         echo "The file $1 is no exist"
     fi
-    # visualisation
-    java -cp "./Simulate/bin:/lib/*" Visualisation.Visualisation "./Statistic/s1"
     
-    # generate the visualisation of statistic
-    num=$(wc -l ./Statistic/v1 | awk '{print $1}')
+    num=$(wc -l ./Statistic/s1 | awk '{print $1}')
     if [ ${num} -gt 1 ]
     then
-        gnuplot ./Visualisation/v1_plot
-    fi
-    num=$(wc -l ./Statistic/v2 | awk '{print $1}')
-    if [ ${num} -gt 1 ]
-    then
-        gnuplot ./Visualisation/v2_plot
-    fi
-    num=$(wc -l ./Statistic/v3 | awk '{print $1}')
-    if [ ${num} -gt 1 ]
-    then
-        gnuplot ./Visualisation/v3_plot
+        # visualisation
+        java -cp "./Simulate/bin:/lib/*" Visualisation.Visualisation "./Statistic/s1"
+
+        # generate the visualisation of statistic
+        num=$(wc -l ./Statistic/v1 | awk '{print $1}')
+        if [ ${num} -gt 1 ]
+        then
+            gnuplot ./Visualisation/v1_plot
+        fi
+        num=$(wc -l ./Statistic/v2 | awk '{print $1}')
+        if [ ${num} -gt 1 ]
+        then
+            gnuplot ./Visualisation/v2_plot
+        fi
+        num=$(wc -l ./Statistic/v3 | awk '{print $1}')
+        if [ ${num} -gt 1 ]
+        then
+            gnuplot ./Visualisation/v3_plot
+        fi
     fi
 fi
 
