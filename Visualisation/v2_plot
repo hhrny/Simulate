@@ -1,6 +1,0 @@
-set terminal png
-set output "./Statistic/v2.png"
-set title "statistic"
-set xlabel "disposal distrbute shape"
-set ylabel "trip efficiency"
-plot "./Statistic/v2" with linespoints
